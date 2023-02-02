@@ -1,1 +1,1 @@
-All soluton to the Ethernaut problems
+All solutions to the Ethernaut problems
