@@ -40,7 +40,7 @@ contract Switch {
 }
 
 contract Attack {
-    Switch public immutable sw = Switch(0x939ddF8aCf36daA37B22E89AFe40B99881EED7a7);
+    Switch public constant sw = Switch(0x939ddF8aCf36daA37B22E89AFe40B99881EED7a7);
 
     function kek() external {
         bytes memory data = abi.encodePacked(
