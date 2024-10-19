@@ -1,3 +1,3 @@
-contract.approve("0x2497583E874898B0C5bC88DF4A869a22416a9B91","1000000000000000000000000") //my second acc can now send this tokens
-in Remix "deploy at Address" with the address of Token
-with my second acc: transferFrom(from "my main",to "any address",amount "1000000000000000000000000")
+1. await contract.approve("second address","1000000000000000000000000")
+2. in Remix "deploy at Address" with the address of the token
+3. with the second address: transferFrom("main address", "any address", "1000000000000000000000000")
