@@ -9,7 +9,7 @@ interface IForta {
 /**
  * @dev The problem is that if we try to call `sweepToken` with LegacyToken address,
  * it will use `transfer`, which overrides the standard ERC20 transfer function.
- * That агтсешщт will call DET in which `origSender` == msg.sender in LegacyToken,
+ * That function will call DET in which `origSender` == msg.sender in LegacyToken,
  * which is CryptoVault address. We need to prevent that.
  */
 contract DetectionBot {
